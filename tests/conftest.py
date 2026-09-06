@@ -13,6 +13,21 @@ from aiounifi.controller import Controller
 from aiounifi.models.configuration import Configuration
 
 
+def client_response_factory(*args: Any, **kwargs: Any) -> aiohttp.ClientResponse:
+    """Create a mock response compatible with aiohttp 3.14."""
+    stream_writer = Mock()
+    stream_writer.output_size = 0
+    kwargs["stream_writer"] = stream_writer
+    return aiohttp.ClientResponse(*args, **kwargs)
+
+
+@pytest.fixture(autouse=True)
+def patch_aioresponses_client_response() -> None:
+    """Make aioresponses compatible with aiohttp 3.14."""
+    with patch("aioresponses.core.ClientResponse", client_response_factory):
+        yield
+
+
 @pytest.fixture(name="mock_aioresponse")
 def aioresponse_fixture() -> aioresponses:
     """AIOHTTP fixture."""
@@ -98,6 +113,7 @@ def _endpoint_fixture(
     dpi_group_payload: list[dict[str, Any]],
     firewall_policy_payload: list[dict[str, Any]],
     firewall_zone_payload: list[dict[str, Any]],
+    object_oriented_network_config_payload: list[dict[str, Any]],
     port_forward_payload: list[dict[str, Any]],
     site_payload: list[dict[str, Any]],
     system_information_payload: list[dict[str, Any]],
@@ -195,6 +211,11 @@ def _endpoint_fixture(
         "/proxy/network/v2/api/site/default/firewall/zone",
         firewall_zone_payload,
     )
+    mock_get_request(
+        "/v2/api/site/default/object-oriented-network-configs",
+        "/proxy/network/v2/api/site/default/object-oriented-network-configs",
+        object_oriented_network_config_payload,
+    )
 
 
 @pytest.fixture(name="response_payload")
@@ -290,4 +311,10 @@ def firewall_policy_data_fixture() -> list[dict[str, Any]]:
 @pytest.fixture(name="firewall_zone_payload")
 def firewall_zone_data_fixture() -> list[dict[str, Any]]:
     """Firewall zone data."""
+    return []
+
+
+@pytest.fixture(name="object_oriented_network_config_payload")
+def object_oriented_network_config_data_fixture() -> list[dict[str, Any]]:
+    """Object-oriented network configuration data."""
     return []

@@ -124,11 +124,40 @@ class TypedDeviceOutletTable(TypedDict):
     has_metering: NotRequired[bool]
     name: str
     outlet_caps: int
-    outlet_voltage: NotRequired[str]
-    outlet_current: NotRequired[str]
-    outlet_power: NotRequired[str]
-    outlet_power_factor: NotRequired[str]
+    outlet_voltage: NotRequired[str | float]
+    outlet_current: NotRequired[str | float]
+    outlet_power: NotRequired[str | float]
+    outlet_power_factor: NotRequired[str | float]
     relay_state: bool
+
+
+class TypedDeviceBatteryPool(TypedDict, total=False):
+    """Device battery pool type definition."""
+
+    batt_available_cnt: int
+    batteryLevel: int
+    battery_avr_time: int
+    device_bypass_voltage: float
+    device_input_voltage: float
+    device_output_current: float
+    device_output_voltage: float
+    device_total_power_budget: int
+    device_total_power_factor: float
+    device_total_power_output: float
+    ischarging: bool
+    readycnt: int
+    timeToRemain: int
+
+
+class TypedDeviceVbmsTable(TypedDict, total=False):
+    """Device VBMS table type definition."""
+
+    battery_table: list[dict[str, Any]]
+    bms_run_anomaly: int
+    battpool: TypedDeviceBatteryPool
+    epo_enabled: bool
+    input_thd_level: int
+    is_battery_mode: bool
 
 
 class TypedDevicePortOverrides(TypedDict, total=False):
@@ -564,6 +593,7 @@ class TypedDevice(TypedDict):
     usg_caps: int
     vap_table: list[dict]  # type: ignore[type-arg]
     version: str
+    vbms_table: NotRequired[TypedDeviceVbmsTable]
     vwireEnabled: bool
     vwire_table: list  # type: ignore[type-arg]
     vwire_vap_table: list  # type: ignore[type-arg]
@@ -601,6 +631,7 @@ class DeviceType(enum.StrEnum):
     DREAM_MACHINE = "udm"
     SECURITY_GATEWAY = "ugw"
     PHONE = "uph"
+    SMART_POWER = "usp"
     SWITCH = "usw"
     NEXTGEN_GATEWAY = "uxg"
 
@@ -1101,6 +1132,18 @@ class Device(ApiItem):
     def outlet_table(self) -> list[TypedDeviceOutletTable]:
         """List of outlets."""
         return self.raw.get("outlet_table", [])
+
+    @property
+    def vbms_table(self) -> TypedDeviceVbmsTable | None:
+        """Battery management system data."""
+        return self.raw.get("vbms_table")
+
+    @property
+    def battery_pool(self) -> TypedDeviceBatteryPool | None:
+        """Battery pool data."""
+        if (vbms_table := self.vbms_table) is not None:
+            return vbms_table.get("battpool")
+        return None
 
     @property
     def port_overrides(self) -> list[TypedDevicePortOverrides]:
